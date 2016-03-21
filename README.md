@@ -3,6 +3,11 @@ Experimental HMR support for @ngrx/store based on [angular2-hmr](https://github.
 
 
 ## Setup
+First install the library:
+```
+npm install ngrx-store-hmr --save-dev
+```
+
 In order for your application to have HMR support, you need to wrap your bootstrap call in a function that receives an optional HMR state object:
 
 ```ts
