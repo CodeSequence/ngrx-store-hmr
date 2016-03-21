@@ -11,7 +11,9 @@ npm install ngrx-store-hmr --save-dev
 In order for your application to have HMR support, you need to wrap your bootstrap call in a function that receives an optional HMR state object:
 
 ```ts
+import { provideStore } from '@ngrx/store';
 import { hotModuleReplacement } from 'ngrx-store-hmr';
+import { reducer } from './reducer';
 
 // Wrap bootstrap in a function that accept an optional hmrState
 function main(hmrState?: any) {
