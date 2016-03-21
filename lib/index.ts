@@ -4,24 +4,15 @@ import { ComponentRef } from 'angular2/core';
 
 export function hotModuleReplacement(
   bootloader: (state?: any) => Promise<ComponentRef>,
-  module: any,
-  LOCAL?: boolean,
-  LOCALSTORAGE_KEY: string = '@ngrx/store/hmr'
+  module: any
 ) {
   let COMPONENT_REF: ComponentRef;
-  let DATA = module.hot.data;
+  let DATA = !!module.hot.data ?
+    module.hot.data.state :
+    undefined;
 
+  console.log('APP STATE', DATA);
 
-  console.log('DATA', DATA);
-  if (!DATA && LOCAL) {
-    try {
-      console.time('start localStorage');
-      DATA = JSON.parse(localStorage.getItem(LOCALSTORAGE_KEY)) || DATA;
-      console.timeEnd('start localStorage');
-    } catch (e) {
-      console.log('JSON.parse Error', e);
-    }
-  }
   console.time('bootstrap');
   if (document.readyState === 'complete') {
     bootloader(DATA)
@@ -36,14 +27,7 @@ export function hotModuleReplacement(
   }
 
   function saveState(appState: Store<any>) {
-    const json = JSON.stringify(appState.getState());
-
-    if (LOCAL) {
-      console.time('localStorage');
-      localStorage.setItem(LOCALSTORAGE_KEY, json);
-      console.timeEnd('localStorage');
-    }
-    return json;
+    return appState.getState();
   }
 
   function beforeunload(event) {
@@ -52,9 +36,6 @@ export function hotModuleReplacement(
   }
   (<any>window).WEBPACK_HMR_beforeunload = () => {
     window.removeEventListener('beforeunload', beforeunload);
-    if (LOCAL) {
-      localStorage.removeItem(LOCALSTORAGE_KEY);
-    }
   };
 
   module.hot.accept();
@@ -72,9 +53,9 @@ export function hotModuleReplacement(
     parentNode.insertBefore(newNode, componentNode);
 
     const appState: Store<any> = COMPONENT_REF.injector.get(Store);
-    const json = saveState(appState);
+    const state = saveState(appState);
 
-    (<any>Object).assign(data, json);
+    (<any>Object).assign(data, { state  });
 
     COMPONENT_REF.dispose();
 

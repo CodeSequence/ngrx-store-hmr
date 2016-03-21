@@ -1,6 +1,6 @@
 {
   "name": "ngrx-store-hmr",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "@ngrx/store middleware to connect store state to the Angular2-HMR API",
   "main": "index.js",
   "scripts": {
