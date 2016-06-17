@@ -1,22 +1,23 @@
 import { Store } from '@ngrx/store';
-import { ComponentRef } from 'angular2/core';
-
+import { ComponentRef } from '@angular/core';
+import 'rxjs/add/operator/take';
 
 export function hotModuleReplacement(
-  bootloader: (state?: any) => Promise<ComponentRef>,
+  bootloader: (state?: any) => Promise<ComponentRef<any>>,
+  /* tslint:disable:no-reserved-keywords */
   module: any
-) {
-  let COMPONENT_REF: ComponentRef;
-  let DATA = !!module.hot.data ?
-    module.hot.data.state :
-    undefined;
+  /* tslint:disable:no-reserved-keywords */
+): any {
+  let disposed: boolean = false;
+  let COMPONENT_REF: ComponentRef<any>;
+  let DATA = !!module.hot.data ? module.hot.data.state : undefined;
 
   console.log('APP STATE', DATA);
-
   console.time('bootstrap');
+
   if (document.readyState === 'complete') {
     bootloader(DATA)
-      .then((cmpRef: ComponentRef) => COMPONENT_REF = cmpRef)
+      .then((cmpRef: ComponentRef<any>) => COMPONENT_REF = cmpRef)
       .then((cmpRef => (console.timeEnd('bootstrap'), cmpRef)));
   } else {
     document.addEventListener('DOMContentLoaded', () => {
@@ -26,14 +27,17 @@ export function hotModuleReplacement(
     });
   }
 
-  function saveState(appState: Store<any>) {
-    return appState.getState();
+  function saveState(appState: Store<any>): any {
+    let state: any;
+    appState.take(1).subscribe(s => state = s);
+    return state;
   }
 
-  function beforeunload(event) {
+  function beforeunload(event: any): any {
     const appState: Store<any> = COMPONENT_REF.injector.get(Store);
     return saveState(appState);
   }
+
   (<any>window).WEBPACK_HMR_beforeunload = () => {
     window.removeEventListener('beforeunload', beforeunload);
   };
@@ -42,7 +46,7 @@ export function hotModuleReplacement(
 
   window.addEventListener('beforeunload', beforeunload);
 
-  module.hot.dispose(data => {
+  module.hot.dispose((data: any) => {
     console.time('dispose');
     const componentNode = COMPONENT_REF.location.nativeElement;
     const newNode = document.createElement(componentNode.tagName);
@@ -55,13 +59,14 @@ export function hotModuleReplacement(
     const appState: Store<any> = COMPONENT_REF.injector.get(Store);
     const state = saveState(appState);
 
-    (<any>Object).assign(data, { state  });
-
-    COMPONENT_REF.dispose();
-
+    (<any>Object).assign(data, { state });
+    COMPONENT_REF.destroy();
     newNode.style.display = currentDisplay;
 
-    window.removeEventListener('beforeunload', beforeunload);
+    if (!disposed) {
+      window.removeEventListener('beforeunload', beforeunload);
+    }
+    disposed = true;
     console.timeEnd('dispose');
   });
 }
